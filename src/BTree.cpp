@@ -43,24 +43,33 @@ void BTree<K, V, N, Comp>::balance(BTreeNode *node) {
         right_side->keys[i - median - 1] = node->keys[i];
         right_side->values[i - median - 1] = node->values[i];
         right_side->children[i - median - 1] = node->children[i];
+        if (right_side->children[i - median - 1]) {
+            right_side->children[i - median - 1]->parent_index = i - median - 1;
+            right_side->children[i - median - 1]->parent = right_side;
+        }
         right_side->size++;
     }
     right_side->children[node->size - median - 1] = node->children[node->size];
+    if (right_side->children[node->size - median - 1]) {
+        right_side->children[node->size - median - 1]->parent_index = node->size - median - 1;
+    }
 
     node->size /= 2;
     
-    // propagate median up
     
     // we have to create a new node to be the root and propagate too
     if (node->parent == nullptr) {
         node->parent = new BTreeNode();
         node->parent->children[0] = node;
+        node->parent_index = 0;
         this->root = node->parent;
     }
     
-    // recursion moment
+    // propagate median up
     int slot = node->parent->insert(node->keys[median], node->values[median], comp);
     node->parent->children[slot + 1] = right_side;
+    right_side->parent_index = slot + 1;
+    // recursion moment
     if (node->parent->isFull()) {
         balance(node->parent);
     }
@@ -97,6 +106,12 @@ int BTree<K, V, N, Comp>::BTreeNode::insert(K k, V v, const Comp& comp) {
     int i = size;
     while (i > 0 && comp(k, this->keys[i-1])) {
         // idk if this is right yet
+        if (children[i-1]) {
+            children[i-1]->parent_index++;
+        }
+        if (children[i]) {
+            children[i]->parent_index--;
+        }
         std::swap(children[i-1], children[i]);
 
         std::swap(keys[i-1], keys[i]);
@@ -108,3 +123,4 @@ int BTree<K, V, N, Comp>::BTreeNode::insert(K k, V v, const Comp& comp) {
     ++size;
     return i;
 }
+
