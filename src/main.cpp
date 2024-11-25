@@ -1,4 +1,5 @@
 #include "BTree.h"
+#include <iostream>
 #include <string>
 
 using namespace std;
@@ -16,6 +17,10 @@ void funner_test() {
     tree.insert(15, 15);
     tree.insert(20, 20);
     tree.insert(17, 17);
+
+    for (auto k : tree) {
+        std::cout << "Key: " << k.first << std::endl;
+    }
 }
 
 
