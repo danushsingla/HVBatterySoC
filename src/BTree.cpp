@@ -1,5 +1,6 @@
-#include "BTree.h"
 #include <cassert>
+#include <iostream>
+#include <stdexcept>
 
 template <typename K, typename V, int N, typename Comp>
 void BTree<K, V, N, Comp>::insert(K k, V v) {
@@ -19,7 +20,9 @@ void BTree<K, V, N, Comp>::insert(K k, V v) {
         }
         current_node = current_node->children[i];
     }
-    assert(current_node->isLeaf() && !current_node->isFull());
+    if (!(current_node && current_node->isLeaf() && !current_node->isFull())) {
+        throw std::runtime_error("Bizarre btree behavior");
+    }
     current_node->insert(k, v, comp);
 
     // balance
@@ -47,11 +50,14 @@ void BTree<K, V, N, Comp>::balance(BTreeNode *node) {
             right_side->children[i - median - 1]->parent_index = i - median - 1;
             right_side->children[i - median - 1]->parent = right_side;
         }
+        node->children[i] = nullptr;
         right_side->size++;
     }
     right_side->children[node->size - median - 1] = node->children[node->size];
+    node->children[node->size] = nullptr;
     if (right_side->children[node->size - median - 1]) {
         right_side->children[node->size - median - 1]->parent_index = node->size - median - 1;
+        right_side->children[node->size - median - 1]->parent = right_side;
     }
 
     node->size /= 2;
@@ -67,13 +73,15 @@ void BTree<K, V, N, Comp>::balance(BTreeNode *node) {
     
     // propagate median up
     int slot = node->parent->insert(node->keys[median], node->values[median], comp);
+    // assert(node->parent->children[slot] == node);
     node->parent->children[slot + 1] = right_side;
+    // node->parent_index = slot;
     right_side->parent_index = slot + 1;
+    right_side->parent = node->parent;
     // recursion moment
     if (node->parent->isFull()) {
         balance(node->parent);
     }
-    right_side->parent = node->parent;
 }
 
 template <typename K, typename V, int N, typename Comp>
@@ -106,13 +114,13 @@ int BTree<K, V, N, Comp>::BTreeNode::insert(K k, V v, const Comp& comp) {
     int i = size;
     while (i > 0 && comp(k, this->keys[i-1])) {
         // idk if this is right yet
-        if (children[i-1]) {
-            children[i-1]->parent_index++;
-        }
         if (children[i]) {
-            children[i]->parent_index--;
+            children[i]->parent_index = i+1;
         }
-        std::swap(children[i-1], children[i]);
+        if (children[i+1]) {
+            children[i+1]->parent_index = i;
+        }
+        std::swap(children[i+1], children[i]);
 
         std::swap(keys[i-1], keys[i]);
         std::swap(values[i-1], values[i]);
