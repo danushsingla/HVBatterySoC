@@ -21,6 +21,14 @@ class BTree {
         int insert(K k, V v, const Comp& comp);
         bool isFull();
         bool isLeaf();
+
+        ~BTreeNode() {
+            for (int i = 0; i <= size; i++) {
+                if (children[i]) {
+                    delete children[i];
+                }
+            }
+        }
     };
     BTreeNode *root = nullptr;
 
@@ -100,9 +108,14 @@ public:
                 cur = cur->children[cur->size];
                 goto lol;
             }
+            auto target_index = cur->parent_index;
             auto target = cur->parent;
 
-            while (target && target->parent_index >= (target->parent ? target->parent->size : 0)) {
+            while (target && (target_index >= (target->parent ? target->parent->size : 0))) {
+                if (!comp(cur->keys[target_index], key)) {
+                    break;
+                }
+                target_index = target->parent_index;
                 target = target->parent;
             }
 
@@ -110,7 +123,7 @@ public:
                 return this->end();
             }
             
-            return { target, target->parent_index };
+            return { target, target_index };
         }
 
         return this->end();
@@ -123,6 +136,10 @@ public:
          }
 
          return (*lookup).second;
+     }
+
+     ~BTree() {
+         delete root;
      }
 };
 

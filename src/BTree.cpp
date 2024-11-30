@@ -23,6 +23,9 @@ void BTree<K, V, N, Comp>::insert(K k, V v) {
     if (!(current_node && current_node->isLeaf() && !current_node->isFull())) {
         throw std::runtime_error("Bizarre btree behavior");
     }
+    for (int i = current_node->size + 1; i < N + 1; i++) {
+        current_node->children[i] = nullptr;
+    }
     current_node->insert(k, v, comp);
 
     // balance
@@ -100,7 +103,7 @@ bool BTree<K, V, N, Comp>::BTreeNode::isFull() {
 
 template <typename K, typename V, int N, typename Comp>
 bool BTree<K, V, N, Comp>::BTreeNode::isLeaf() {
-    for (int i = 0; i < N + 1; i++) {
+    for (int i = 0; i < size+1; i++) {
         if (children[i] != nullptr) {
             return false;
         }

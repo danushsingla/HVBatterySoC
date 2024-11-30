@@ -1,7 +1,9 @@
 #include "BTree.h"
+#include "CSVReader.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cstdint>
 #include <iostream>
 #include <random>
 #include <string>
@@ -64,6 +66,15 @@ void specific_test() {
   }
 }
 
+template <typename F> uint64_t timeit(F f) {
+  auto start = std::chrono::high_resolution_clock::now();
+  f();
+  auto end = std::chrono::high_resolution_clock::now();
+
+  auto diff = chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+  return diff.count();
+}
+
 void funner_test() {
   BTree<int, int> tree;
   tree.insert(8, 8);
@@ -78,11 +89,11 @@ void funner_test() {
     std::cout << "Key: " << k.first << std::endl;
   }
 
-  auto lookup = tree.rangeLookUp(21);
+  auto lookup = tree.rangeLookUp(13);
   if (lookup != tree.end()) {
-      std::cout << "Lookup: " << (*lookup).first << std::endl;
+    std::cout << "Lookup: " << (*lookup).first << std::endl;
   } else {
-      std::cout << "Out of bounds" << std::endl;
+    std::cout << "Out of bounds" << std::endl;
   }
 }
 
@@ -92,6 +103,67 @@ int main(void) {
   for (int i = 0; i < 10; i++) {
     fuzzy_tests();
   }
+
+  CSVReader reader("data/test_export.csv");
+  reader.nextStringLine();
+  int i = 0;
+  std::vector<std::vector<double>> raw_lines;
+  while (reader.ready()) {
+    auto line = reader.nextDataLine();
+    if (!line.empty()) {
+      raw_lines.push_back(line);
+    }
+  }
+
+  uint64_t avg = 0.0;
+  for (int i = 0; i < 100; i++) {
+    avg += timeit([&]() {
+      BTree<double, std::vector<double>> tree;
+      for (auto &line : raw_lines) {
+        tree.insert(line[0], line);
+        i++;
+      }
+    });
+  }
+  avg /= 10;
+
+  std::cout << "Inserted " << i << " lines of data into a BTree of order 3 in "
+            << avg << " ns.\n";
+
+  BTree<double, std::vector<double>, 11, std::less<double>> tree2;
+
+  // diff = timeit([&]() {
+  //         auto v = tree.rangeLookUp(3.3);
+  //         auto value = *v;
+  //         assert(value.first >= 3.3);
+  //         });
+  // std::cout << "Lookup time is in " << diff << " ns for BTree of order 3.\n";
+
+  // diff = timeit([&]() {
+  //   i = 0;
+  //   for (auto &line : raw_lines) {
+  //     tree2.insert(line[0], line);
+  //     i++;
+  //   }
+  // });
+  //
+
+  avg = 0.0;
+  for (int i = 0; i < 100; i++) {
+    avg += timeit([&]() {
+      BTree<double, std::vector<double>, 11, std::less<double>> tree;
+      for (auto &line : raw_lines) {
+        tree.insert(line[0], line);
+        i++;
+      }
+    });
+  }
+  avg /= 10;
+
+  std::cout << "Inserted " << i << " lines of data into a BTree of order 11 in " << avg << " ns.\n";
+
+  char c;
+  std::cin >> c;
 
   return 0;
 }
