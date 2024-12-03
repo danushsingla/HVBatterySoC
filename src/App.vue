@@ -1,38 +1,37 @@
 <template>
   <div>
-    <div class="demo-control-panel">
-      <label>Node count:</label>
-      <el-input-number v-model="nodeCount" :min="3" :max="200" />
-      <label>(&lt;= 200)</label>
-    </div>
-
     <v-network-graph
-      :zoom-level="0.5"
-      :nodes="nodes"
-      :edges="edges"
-      :configs="configs"
-      class="network-graph"
-    />
+    :selected-nodes="selectedNodes"
+    :nodes="data.nodes"
+    :edges="data.edges"
+    :layouts="data.layouts"
+    :configs="configs"
+    class="network-graph"
+  />
   </div>
 </template>
 
 <script>
-import { reactive, ref, watch } from "vue";
+import { reactive } from "vue";
 import * as vNG from "v-network-graph";
-import { ForceLayout } from "v-network-graph/lib/force-layout";
+import {
+  ForceLayout
+} from "v-network-graph/lib/force-layout"
 
 export default {
   setup() {
-    const nodeCount = ref(20);
-    const nodes = reactive({});
-    const edges = reactive({});
+    const data = reactive({
+      nodes: {},
+      edges: {},
+      colors: {},
+      layouts: { nodes: {} },
+    });
+
+    const COLOR_RED = "#ff0000";
+    const COLOR_BLACK = "#000000";
 
     // initialize network
-    buildNetwork(nodeCount.value, nodes, edges);
-
-    watch(nodeCount, () => {
-      buildNetwork(nodeCount.value, nodes, edges);
-    });
+    buildNetwork();
 
     const configs = reactive(
       vNG.defineConfigs({
@@ -42,52 +41,53 @@ export default {
             positionFixedByClickWithAltKey: true,
             createSimulation: (d3, nodes, edges) => {
               // d3-force parameters
-              const forceLink = d3
-                .forceLink(edges)
-                .id(d => d.id);
+              const forceLink = d3.forceLink(edges).id(d => d.id);
               return d3
                 .forceSimulation(nodes)
                 .force("edge", forceLink.distance(40).strength(0.5))
                 .force("charge", d3.forceManyBody().strength(-800))
                 .force("center", d3.forceCenter().strength(0.05))
                 .alphaMin(0.001);
-            },
+            }
           }),
         },
         node: {
           label: {
             visible: false,
           },
+          normal: {
+            color: (n) => {
+              return data.colors[n.name] ? COLOR_RED : COLOR_BLACK;
+            },
+          },
         },
       })
     );
+    configs.node.selectable = true
+    configs.node.label.visible = true
 
-    function buildNetwork(count, nodes, edges) {
-      const idNums = [...Array(count)].map((_, i) => i);
+    function buildNetwork() {
+      // Assign values to the reactive objects
+      data.nodes.node1 = { name: "N1" };
+      data.nodes.node2 = { name: "N2" };
+      data.nodes.node3 = { name: "N3" };
 
-      // nodes
-      const newNodes = Object.fromEntries(idNums.map(id => [`node${id}`, {}]));
-      Object.keys(nodes).forEach(id => delete nodes[id]);
-      Object.assign(nodes, newNodes);
+      //False = black, True = red
+      data.colors["N1"] = false;
+      data.colors["N2"] = true;
+      data.colors["N3"] = true;
 
-      // edges
-      const makeEdgeEntry = (id1, id2) => {
-        return [`edge${id1}-${id2}`, { source: `node${id1}`, target: `node${id2}` }];
-      };
-      const newEdges = Object.fromEntries(
-        [...idNums]
-          .map(n => [n, Math.floor(n / 4) * 4 % count])
-          .map(([n, m]) => (n === m ? [n, (n + 4) % count] : [n, m]))
-          .map(([n, m]) => makeEdgeEntry(n, m))
-      );
-      Object.keys(edges).forEach(id => delete edges[id]);
-      Object.assign(edges, newEdges);
+      data.edges.edge1 = { source: "node1", target: "node2" };
+      // data.edges.edge2 = { source: "node2", target: "node3" };
+      data.edges.edge3 = { source: "node3", target: "node1" };
+
+      data.layouts.nodes.node1 = { x: 50, y: 0 };
+      data.layouts.nodes.node2 = { x: 0, y: 75 };
+      data.layouts.nodes.node3 = { x: 100, y: 75 };
     }
 
     return {
-      nodeCount,
-      nodes,
-      edges,
+      data,
       configs,
     };
   },
