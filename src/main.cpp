@@ -1,4 +1,5 @@
-#include "BTree.h"
+#define ENABLE_ASSERTS
+#include "BTree.hpp"
 #include "CSVReader.h"
 #include <algorithm>
 #include <array>
