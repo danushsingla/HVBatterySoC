@@ -1,8 +1,10 @@
-import Vue from 'vue'
-import App from './App.vue'
+// main.js
+import { createApp } from "vue"
+import VNetworkGraph from "v-network-graph"
+import "v-network-graph/lib/style.css"
+import App from "./App.vue"
 
-Vue.config.productionTip = false
+const app = createApp(App)
 
-new Vue({
-  render: h => h(App),
-}).$mount('#app')
+app.use(VNetworkGraph)
+app.mount("#app")
