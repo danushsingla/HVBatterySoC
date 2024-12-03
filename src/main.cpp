@@ -13,6 +13,8 @@ using namespace std;
 
 void primitive_test() {}
 
+constexpr double THEORETICAL_CAPACITY = 2.52e7;
+
 void fuzzy_tests() {
   std::array<int, 100> array;
   for (int i = 0; i < 100; i++) {
@@ -97,13 +99,27 @@ void funner_test() {
   }
 }
 
-int main(void) {
-  specific_test();
-  funner_test();
-  for (int i = 0; i < 10; i++) {
-    fuzzy_tests();
-  }
+template<typename iterator>
+double changeInSOC(const iterator& iter) {
+    double soc = 0.0;
+    double before = 0.0;
+    for (auto pair : iter) {
+        double now = pair.first;
+        double current = pair.second[1];
+        double voltage = 0.0;
+        for (int i = 2; i < pair.second.size(); i++) {
+            voltage += pair.second[i];
+        }
+        std::cout << "Voltage: " << voltage << " ";
+        std::cout << "Current: " << current << "\n";
 
+        soc += (now - before) * current * voltage;
+        before = now;
+    }
+    return soc / THEORETICAL_CAPACITY;
+}
+
+void stuff() {
   CSVReader reader("data/test_export.csv");
   reader.nextStringLine();
   int i = 0;
@@ -161,6 +177,37 @@ int main(void) {
   avg /= 10;
 
   std::cout << "Inserted " << i << " lines of data into a BTree of order 11 in " << avg << " ns.\n";
+}
+
+int main(void) {
+  specific_test();
+  funner_test();
+  for (int i = 0; i < 10; i++) {
+    fuzzy_tests();
+  }
+
+  
+  CSVReader reader("data/full_project_data.csv");
+  reader.nextStringLine();
+  int i = 0;
+  std::vector<std::vector<double>> raw_lines;
+  while (reader.ready()) {
+    auto line = reader.nextDataLine();
+    if (!line.empty()) {
+      raw_lines.push_back(line);
+    }
+  }
+
+  BTree<double, std::vector<double>> tree;
+  for (auto line: raw_lines) {
+      tree.insert(line[0], line);
+  }
+
+  std::cout << "Lines: " << raw_lines.size() << "\n";
+
+  double res = changeInSOC(tree);
+
+  std::cout << "result: " << res * 100.0 << "%" << "\n";
 
   char c;
   std::cin >> c;
