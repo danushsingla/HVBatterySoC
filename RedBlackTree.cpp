@@ -8,8 +8,8 @@ using namespace std;
 
 struct Node {
     vector<double> voltages = vector<double>(96,0);
-    double current;
-    double time;
+    double current = 0.0;
+    double time = 0.0;
     bool color;
     Node *parent = nullptr;
     Node *left = nullptr;
@@ -43,6 +43,37 @@ struct Node {
         }
         else {
             return nullptr;
+        }
+    }
+
+    Node* search_range(double t) {
+        if (t == time) {
+            return this;
+        }
+        if (t < time) {
+            if (left != nullptr) {
+                Node* temp = left;
+                while (temp->right != nullptr) {
+                    temp = temp->right;
+                }
+                if (t > temp->time) {
+                    return this;
+                }
+                return left->search_range(t);
+            }
+        }
+        else {
+            if (right == nullptr) {
+                return this;
+            }
+            Node* temp = right;
+            while (temp->left != nullptr) {
+                temp = temp->left;
+            }
+            if (t < temp->time) {
+                return temp;
+            }
+            return right->search_range(t);
         }
     }
 };
@@ -94,7 +125,14 @@ public:
     explicit RedBlackIterator(Node *node = nullptr) : current(node) {}
 
     // Reference and dereference operators
-    reference operator*() const {return current->time;}
+    reference operator*() const {
+        static double default_value = -1;
+        if (current == nullptr) {
+            return default_value;
+        }
+
+        return current->time;
+    }
     pointer operator->() const {return &(current->time);}
 
     // Pre-increment operator
@@ -315,7 +353,7 @@ public:
                 parent->color = false;
                 uncle->color = false;
                 grand_parent->color = true;
-                check_color(parent);
+                check_color(grand_parent);
             }
             else if (parent->color == true && (uncle == nullptr || uncle->color == false)) {
                 if (grand_parent == nullptr) {
@@ -344,27 +382,25 @@ public:
     }
 
     Node* search(double t) {
-      if (root == nullptr) {
-        return nullptr;
-      }
-      return root->search(t);
+        if (root == nullptr) {
+            return nullptr;
+        }
+        return root->search(t);
     }
 
-    vector<Node*> search_range(double s, double e) {
+    iterator search_range(double start) {
         if (root == nullptr) {
-            return vector<Node*>();
+            return iterator(nullptr);
         }
-        vector<Node*> result;
-        Node* start = root->search(s);
-        Node* end = root->search(e);
-        if (start == end) {
-            result.push_back(start);
-            return result;
+        if (start <= *iterator(begin())) {
+            return iterator(begin());
         }
-        else if (start == nullptr || end == nullptr) {
-            return vector<Node*>();
+        if (start > *iterator(end())) {
+            return iterator(nullptr);
         }
-    };
+        Node* ret = root->search_range(start);
+        return iterator(ret);
+    }
 };
 
 int main()
@@ -378,11 +414,11 @@ int main()
     tree.insert(v,i,13);
     tree.insert(v,i,15);
     tree.insert(v,i,14);
+    tree.insert(v,i,25);
     cout << "test" << endl;
 
-    for (RedBlackTree::iterator it = tree.begin(); it != tree.end(); ++it) {
-        std::cout << *it << " ";
-    }
+    RedBlackTree::iterator it = tree.search_range(30);
+    cout << *it << endl;
 
     return 0;
 }
