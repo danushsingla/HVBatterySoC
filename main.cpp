@@ -26,7 +26,11 @@ int main()
 
   RedBlackTree rb_tree;
 
+  int count = 0;
   for (auto line : raw_lines) {
+    cout << count << endl;
+    if(count >= 1100) break;
+    count++;
       rb_tree.insert(
           std::vector<double>(line.begin() + 1, line.begin() + 1 + 96),
           line[line.size() - 1], line[0]);

@@ -85,6 +85,7 @@ export default {
             color: (n) => {
               return filteredData.colors[n.name] ? COLOR_RED : COLOR_BLACK;
             },
+            radius: 10,
           },
         },
       })
@@ -178,10 +179,10 @@ export default {
         const parts = line.split(' ');
 
         //Start ripping apart the data
-        const timestamp = parts[0];
-        const color = parts[1] === '1'; //Convert from string to boolean
-        const leftNodeTime = parseFloat(parts[2]);
-        const rightNodeTime = parseFloat(parts[3]);
+        const timestamp = (parseFloat(parts[0]) * 1000).toString(); // Multiply by 1000
+        const color = parts[1] === '1'; // Convert from string to boolean
+        const leftNodeTime = parseFloat(parts[2]) * 1000; // Multiply by 1000
+        const rightNodeTime = parseFloat(parts[3]) * 1000; // Multiply by 1000
         const current = parseFloat(parts[4]);
         const voltages = parts.slice(5).map(parseFloat);
 
@@ -196,16 +197,19 @@ export default {
 
         colors[timestamp] = color;
 
+        console.log("Current time: " + timestamp + " Left Node Time: " + leftNodeTime + " Right Node Time: " + rightNodeTime);
+        console.log(edges);
+
         //Creating edges
-        if (leftNodeTime !== "-1" && leftNodeTime in nodes) {
+        if (leftNodeTime !== "-1") {
           edges[`${timestamp}-left`] = {
-            source: timestamp,
+            source: timestamp.toString(),
             target: leftNodeTime.toString(),
           };
         }
-        if (rightNodeTime !== "-1" && rightNodeTime in nodes) {
+        if (rightNodeTime !== "-1") {
           edges[`${timestamp}-right`] = {
-            source: timestamp,
+            source: timestamp.toString(),
             target: rightNodeTime.toString(),
           };
         }

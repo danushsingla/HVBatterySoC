@@ -4,12 +4,8 @@
 
 #include <iostream>
 #include <vector>
-#include <string>
-#include "CSVReader.h"
-#include <fstream>
 #include <queue>
 using namespace std;
-
 
 struct Node {
     vector<double> voltages = vector<double>(96,0);
@@ -49,7 +45,6 @@ struct Node {
         else {
             return nullptr;
         }
-        return nullptr;
     }
 
     Node* search_range(double t) {
@@ -81,7 +76,6 @@ struct Node {
             }
             return right->search_range(t);
         }
-        return nullptr;
     }
 };
 
@@ -126,20 +120,21 @@ class RedBlackIterator {
 
     Node* current = nullptr;
 public:
-    using reference = Node&;
-    using pointer = Node*;
+    using reference = double&;
+    using pointer = double*;
     using iterator_category = std::bidirectional_iterator_tag;
     explicit RedBlackIterator(Node *node = nullptr) : current(node) {}
 
     // Reference and dereference operators
     reference operator*() const {
+        static double default_value = -1;
         if (current == nullptr) {
-            throw std::runtime_error("Invalid iterator state");
+            return default_value;
         }
 
-        return *current;
+        return current->time;
     }
-    pointer operator->() const {return current;}
+    pointer operator->() const {return &(current->time);}
 
     // Pre-increment operator
     RedBlackIterator& operator++() {
@@ -182,6 +177,7 @@ public:
 
     RedBlackTree(vector<double> v, double i, double t) {
         root = new Node(v, i, t, false);
+        count++;
     };
 
     iterator begin() {
@@ -211,8 +207,7 @@ public:
             root = new Node(v, i, t, false);
             count++;
         }
-        else
-        {
+        else {
             // First insert a node and color it red
             Node* new_node = new Node(v, i, t, true);
             Node* p = root;
@@ -221,7 +216,7 @@ public:
                     if (p->right == nullptr) {break;}
                     p = p->right;
                 }
-                else if (new_node->time <= p->time) {
+                else if (new_node->time < p->time) {
                     if (p->left == nullptr) {break;}
                     p = p->left;
                 }
@@ -256,7 +251,6 @@ public:
         parent->parent = great_grand_parent;
         if (great_grand_parent == nullptr) {
             parent->parent = nullptr;
-            root = parent;
         }
         else if (grand_parent->time > great_grand_parent->time) {
             great_grand_parent->right = parent;
@@ -268,6 +262,10 @@ public:
         bool temp = grand_parent->color;
         grand_parent->color = parent->color;
         parent->color = temp;
+
+        if (root == grand_parent) {
+            root = parent;
+        }
     }
 
     void left_left_rotate(Node* parent) {
@@ -284,7 +282,6 @@ public:
         parent->parent = great_grand_parent;
         if (great_grand_parent == nullptr) {
             parent->parent = nullptr;
-            root = parent;
         }
         else if (grand_parent->time > great_grand_parent->time) {
             great_grand_parent->right = parent;
@@ -296,6 +293,10 @@ public:
         bool temp = grand_parent->color;
         grand_parent->color = parent->color;
         parent->color = temp;
+
+        if (root == grand_parent) {
+            root = parent;
+        }
     }
 
     void right_rotate(Node* p) {
@@ -314,8 +315,6 @@ public:
         p->parent = grand_parent;
         if (grand_parent != nullptr) {
             grand_parent->right = p;
-        } else {
-            std::cout << "this prob shouldn't happen\n";
         }
     }
 
@@ -335,8 +334,6 @@ public:
         p->parent = grand_parent;
         if (grand_parent != nullptr) {
             grand_parent->left = p;
-        } else {
-            std::cout << "this prob shouldn't happen\n";
         }
     }
 
@@ -345,21 +342,14 @@ public:
             p->color = false;
             return;
         }
-        if (count >= 3)
-        {
+        if (count >= 3) {
             Node* parent = p->parent;
             Node* grand_parent = p->parent->parent;
             Node* uncle = nullptr;
             if (grand_parent == nullptr) {
                 uncle = nullptr;
             }
-            // else if (parent->time > grand_parent->time) {
-            //     uncle = grand_parent->left;
-            // }
-            // else {
-            //     uncle = grand_parent->right;
-            // }
-            else if (grand_parent->left == parent) {
+            else if (parent->time > grand_parent->time) {
                 uncle = grand_parent->left;
             }
             else {
@@ -380,19 +370,23 @@ public:
                 else if (parent->time > grand_parent->time) { // RL and RR
                     if (p->time > parent->time) { // RR
                         right_right_rotate(parent);
+                        check_color(parent);
                     }
                     else { // RL
                         right_rotate(p);
                         right_right_rotate(p);
+                        check_color(parent);
                     }
                 }
                 else { // LL and LR
                     if (p->time < parent->time) { // LL
                         left_left_rotate(parent);
+                        check_color(parent);
                     }
                     else {
                         left_rotate(p);
                         left_left_rotate(p);
+                        check_color(parent);
                     }
                 }
             }
@@ -410,12 +404,12 @@ public:
         if (root == nullptr) {
             return iterator(nullptr);
         }
-        if (start <= iterator(begin())->time) {
+        if (start <= *iterator(begin())) {
             return iterator(begin());
         }
-        // if (start > iterator(end())->time) {
-        //     return iterator(nullptr);
-        // }
+        if (start > *iterator(end())) {
+            return iterator(nullptr);
+        }
         Node* ret = root->search_range(start);
         return iterator(ret);
     }
@@ -425,10 +419,16 @@ public:
             // If the node is null, skip it (no output for null nodes)
             return;
         }
+        cout << "Time: " << root->time << endl;
+        if(root->left) cout << "Left time: " << root->left->time << endl;
+        if(root->right) cout << "Right time: " << root->right->time << endl;
 
         // Start writing the data in the format: <time> <color Boolean> <left_node time> <right_node time> <current integer> <voltages vector list (96 integers)>
-        int left_time = (root->left) ? root->left->time : -1;  // If no left child, assign -1
-        int right_time = (root->right) ? root->right->time : -1;  // If no right child, assign -1
+        auto left_time = (root->left) ? root->left->time : -1;  // If no left child, assign -1
+        auto right_time = (root->right) ? root->right->time : -1;  // If no right child, assign -1
+
+        cout << "Left variable time: " << left_time << endl;
+        cout << "Right variable time: " << right_time << endl;
 
         outFile << root->time << " " 
                 << root->color << " " 
@@ -450,15 +450,8 @@ public:
         //Create queue
         queue<Node*> q;
 
-        // Keep count below 1100
-        int count = 0;
-
         q.push(root);  // Push the root node to the queue
         while(!q.empty()) {
-            if(count >= 1100) {
-                break;
-            }
-            cout << count << endl;
             Node* current = q.front();  // Get the front of the queue
             q.pop();  // Pop the front of the queue
 
@@ -474,7 +467,6 @@ public:
             if (current->right) {
                 q.push(current->right);
             }
-            count++;
         }
 
         outFile.close();  // Close the file after writing
