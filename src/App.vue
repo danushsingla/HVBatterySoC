@@ -1,11 +1,11 @@
 <template>
   <div>
     <v-network-graph
-    :selected-nodes="selectedNodes"
     :nodes="filteredData.nodes"
     :edges="filteredData.edges"
     :layouts="filteredData.layouts"
     :configs="configs"
+    :event-handlers="click_event"
     class="network-graph"
   />
   <div class="control-panel">
@@ -14,15 +14,13 @@
       <button @click="resetNodes">Reset</button>
     </div>
 
-      <!-- Modal/Dialogue for showing selected node details -->
-      <div v-if="selectedNode" class="modal">
-      <div class="modal-content">
-        <span class="close" @click="selectedNode = null">&times;</span>
-        <h3>Node Details</h3>
-        <p><strong>Node Name:</strong> {{ selectedNode.name }}</p>
-        <p><strong>Node Color:</strong> {{ data.colors[selectedNode.name] ? 'Red' : 'Black' }}</p>
-      </div>
-      </div>
+    <!-- Node Info Box -->
+    <div v-if="selectedNode" class="node-info-box">
+      <h3>Node Information</h3>
+      <p><strong>Name:</strong> {{ selectedNode.name }}</p>
+      <p><strong>Color:</strong> {{ selectedNodeColor }}</p>
+    </div>
+
   </div>
 </template>
 
@@ -54,7 +52,9 @@ export default {
     const COLOR_BLACK = "#000000";
 
     let rangeInput = ref("");
+
     const selectedNode = ref(null);
+    const selectedNodeColor = ref('');
 
     // initialize network
     buildNetwork();
@@ -137,10 +137,14 @@ export default {
       filteredData.colors = data.colors;
     }
 
-    function handleNodeSelected(node) {
-      // When a node is selected, set it as the selected node
-      selectedNode.value = node;
-    }
+    const click_event = {
+      "node:click": ({ node }) => {
+        selectedNode.value = filteredData.nodes[node];
+
+        //console.log(filteredData.colors);
+        selectedNodeColor.value = filteredData.colors[filteredData.nodes[node].name] ? "Red" : "Black";
+      },
+    };
 
     function buildNetwork() {
       // Assign values to the reactive objects
@@ -164,6 +168,7 @@ export default {
       filteredData.nodes = data.nodes;
       filteredData.edges = data.edges;
       filteredData.colors = data.colors;
+      console.log(filteredData.colors[0])
     }
 
     return {
@@ -173,8 +178,9 @@ export default {
       filteredData,
       resetNodes,
       filterNodesByRange,
-      handleNodeSelected,
-      selectedNode
+      click_event,
+      selectedNode,
+      selectedNodeColor,
     };
   },
 };
@@ -190,30 +196,15 @@ export default {
   height: 600px;
 }
 
-.modal {
+.node-info-box {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.modal-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
-}
-
-.close {
-  font-size: 30px;
-  position: absolute;
   top: 10px;
   right: 10px;
-  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 14px;
+  z-index: 1000;
 }
 </style>
