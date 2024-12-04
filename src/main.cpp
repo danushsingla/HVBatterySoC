@@ -107,24 +107,33 @@ double changeInSOC(const BTree<double, std::vector<double>, N> &iter,
   double soc = 0.0;
   double before = 0.0;
   int i = 0;
-  auto iterator = start == 0 ? iter.begin() : iter.rangeLookUp(start);
-  for (; iterator != iter.end(); ++iterator) {
-    auto &pair = *iterator;
-    double now = pair.first;
-    if (now >= end) {
-      break;
-    }
-    double current = pair.second[pair.second.size() - 1];
-    double voltage = 0.0;
-    for (int i = 1; i < pair.second.size() - 1; i++) {
-      voltage += pair.second[i];
-    }
-    // -1.0 factor is because a negative current reading is charging, a positive
-    // current reading is discharge
-    soc += -1.0 * (now - before) * current * voltage;
-    before = now;
-    i += 1;
+
+  auto iterator = iter.begin();
+  if (start != 0) {
+    auto time = timeit([&]() { iterator = iter.rangeLookUp(start); });
+    std::cout << "Time to find initial BTree node: " << time << "ns\n";
   }
+  auto calculation_time = timeit([&]() {
+    for (; iterator != iter.end(); ++iterator) {
+      auto &pair = *iterator;
+      double now = pair.first;
+      if (now >= end) {
+        break;
+      }
+      double current = pair.second[pair.second.size() - 1];
+      double voltage = 0.0;
+      for (int i = 1; i < pair.second.size() - 1; i++) {
+        voltage += pair.second[i];
+      }
+      // -1.0 factor is because a negative current reading is charging, a
+      // positive current reading is discharge
+      soc += -1.0 * (now - before) * current * voltage;
+      before = now;
+      i += 1;
+    }
+  });
+  std::cout << "BTree SOC calculation algorithm time: " << calculation_time
+            << "ns\n";
   return soc / THEORETICAL_CAPACITY;
 }
 
@@ -193,27 +202,35 @@ double rbtreesoc(RedBlackTree &tree, double start = 0, double end = 100000) {
   int i = 0;
   double soc = 0.0;
   double before = 0.0;
-  auto iter = start == 0 ? tree.begin() : tree.search_range(start);
-  for (; iter != tree.end(); ++iter) {
-    auto &node = *iter;
-    double now = node.time;
-    if (now >= end) {
-      break;
-    }
-    double current = node.current;
-    double voltage = 0.0;
-    for (int i = 0; i < node.voltages.size(); i++) {
-      voltage += node.voltages[i];
-    }
-    // std::cout << "Voltage: " << voltage << " ";
-    // std::cout << "Current: " << current << "\n";
-
-    // -1.0 factor is because a negative current reading is charging, a positive
-    // current reading is discharge
-    soc += -1.0 * (now - before) * current * voltage;
-    before = now;
-    i++;
+  auto iter = tree.begin();
+  if (start != 0) {
+    auto time = timeit([&]() { iter = tree.search_range(start); });
+    std::cout << "Time to find initial Red-Black Tree node: " << time << "ns\n";
   }
+  auto calculation_time = timeit([&]() {
+    for (; iter != tree.end(); ++iter) {
+      auto &node = *iter;
+      double now = node.time;
+      if (now >= end) {
+        break;
+      }
+      double current = node.current;
+      double voltage = 0.0;
+      for (int i = 0; i < node.voltages.size(); i++) {
+        voltage += node.voltages[i];
+      }
+      // std::cout << "Voltage: " << voltage << " ";
+      // std::cout << "Current: " << current << "\n";
+
+      // -1.0 factor is because a negative current reading is charging, a
+      // positive current reading is discharge
+      soc += -1.0 * (now - before) * current * voltage;
+      before = now;
+      i++;
+    }
+  });
+  std::cout << "Red-Black Tree SOC calculation algorithm time: " << calculation_time
+            << "ns\n";
   return soc / THEORETICAL_CAPACITY;
 }
 
@@ -276,10 +293,12 @@ int main(void) {
   double rbtree_res = rbtreesoc(rb_tree, start, end);
 
   std::cout << "BTree SOC Change Result: " << res * 100.0 << "%" << "\n";
-  std::cout << "BTree Build Time: " << (double)btree_build_time_ns / 1e9 << "s" << "\n";
+  std::cout << "BTree Build Time: " << (double)btree_build_time_ns / 1e9 << "s"
+            << "\n";
   std::cout << "Red-Black Tree SOC Change Result: " << rbtree_res * 100.0 << "%"
             << "\n";
-  std::cout << "Red-Black Build Time: " << (double)rbtree_build_time_ns / 1e9 << "s" << "\n";
+  std::cout << "Red-Black Build Time: " << (double)rbtree_build_time_ns / 1e9
+            << "s" << "\n";
 
   return 0;
 }
