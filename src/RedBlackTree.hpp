@@ -44,6 +44,7 @@ struct Node {
         else {
             return nullptr;
         }
+        return nullptr;
     }
 
     Node* search_range(double t) {
@@ -75,6 +76,7 @@ struct Node {
             }
             return right->search_range(t);
         }
+        return nullptr;
     }
 };
 
@@ -119,21 +121,20 @@ class RedBlackIterator {
 
     Node* current = nullptr;
 public:
-    using reference = double&;
-    using pointer = double*;
+    using reference = Node&;
+    using pointer = Node*;
     using iterator_category = std::bidirectional_iterator_tag;
     explicit RedBlackIterator(Node *node = nullptr) : current(node) {}
 
     // Reference and dereference operators
     reference operator*() const {
-        static double default_value = -1;
         if (current == nullptr) {
-            return default_value;
+            throw std::runtime_error("Invalid iterator state");
         }
 
-        return current->time;
+        return *current;
     }
-    pointer operator->() const {return &(current->time);}
+    pointer operator->() const {return current;}
 
     // Pre-increment operator
     RedBlackIterator& operator++() {
@@ -215,7 +216,7 @@ public:
                     if (p->right == nullptr) {break;}
                     p = p->right;
                 }
-                else if (new_node->time < p->time) {
+                else if (new_node->time <= p->time) {
                     if (p->left == nullptr) {break;}
                     p = p->left;
                 }
@@ -250,6 +251,7 @@ public:
         parent->parent = great_grand_parent;
         if (great_grand_parent == nullptr) {
             parent->parent = nullptr;
+            root = parent;
         }
         else if (grand_parent->time > great_grand_parent->time) {
             great_grand_parent->right = parent;
@@ -277,6 +279,7 @@ public:
         parent->parent = great_grand_parent;
         if (great_grand_parent == nullptr) {
             parent->parent = nullptr;
+            root = parent;
         }
         else if (grand_parent->time > great_grand_parent->time) {
             great_grand_parent->right = parent;
@@ -306,6 +309,8 @@ public:
         p->parent = grand_parent;
         if (grand_parent != nullptr) {
             grand_parent->right = p;
+        } else {
+            std::cout << "this prob shouldn't happen\n";
         }
     }
 
@@ -325,6 +330,8 @@ public:
         p->parent = grand_parent;
         if (grand_parent != nullptr) {
             grand_parent->left = p;
+        } else {
+            std::cout << "this prob shouldn't happen\n";
         }
     }
 
@@ -341,7 +348,13 @@ public:
             if (grand_parent == nullptr) {
                 uncle = nullptr;
             }
-            else if (parent->time > grand_parent->time) {
+            // else if (parent->time > grand_parent->time) {
+            //     uncle = grand_parent->left;
+            // }
+            // else {
+            //     uncle = grand_parent->right;
+            // }
+            else if (grand_parent->left == parent) {
                 uncle = grand_parent->left;
             }
             else {
@@ -392,33 +405,33 @@ public:
         if (root == nullptr) {
             return iterator(nullptr);
         }
-        if (start <= *iterator(begin())) {
+        if (start <= iterator(begin())->time) {
             return iterator(begin());
         }
-        if (start > *iterator(end())) {
-            return iterator(nullptr);
-        }
+        // if (start > iterator(end())->time) {
+        //     return iterator(nullptr);
+        // }
         Node* ret = root->search_range(start);
         return iterator(ret);
     }
 };
 
-int main()
-{
-    vector<double> v(96,0);
-    double t = 0;
-    double i = 0;
-    RedBlackTree tree(v,i,10);
-    // tree.insert(v,i,t);
-    tree.insert(v,i,9);
-    tree.insert(v,i,13);
-    tree.insert(v,i,15);
-    tree.insert(v,i,14);
-    tree.insert(v,i,25);
-    cout << "test" << endl;
-
-    RedBlackTree::iterator it = tree.search_range(30);
-    cout << *it << endl;
-
-    return 0;
-}
+// int main()
+// {
+//     vector<double> v(96,0);
+//     double t = 0;
+//     double i = 0;
+//     RedBlackTree tree(v,i,10);
+//     // tree.insert(v,i,t);
+//     tree.insert(v,i,9);
+//     tree.insert(v,i,13);
+//     tree.insert(v,i,15);
+//     tree.insert(v,i,14);
+//     tree.insert(v,i,25);
+//     cout << "test" << endl;
+//
+//     RedBlackTree::iterator it = tree.search_range(30);
+//     cout << *it << endl;
+//
+//     return 0;
+// }
