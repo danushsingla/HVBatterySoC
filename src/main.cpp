@@ -243,7 +243,7 @@ int main(void) {
   } catch (std::exception e) {
   }
 
-  CSVReader reader("data/full_project_data.csv");
+  CSVReader reader(path);
   reader.nextStringLine();
   int i = 0;
   std::vector<std::vector<double>> raw_lines;
