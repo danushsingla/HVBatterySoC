@@ -34,7 +34,7 @@ import {
 
 export default {
   setup() {
-    const data = reactive({
+    let data = reactive({
       nodes: {},
       edges: {},
       colors: {},
@@ -131,7 +131,7 @@ export default {
 
     function resetNodes() {
       rangeInput.value = "";
-      console.log(data.nodes);
+      // console.log(data.nodes);
       filteredData.nodes = data.nodes;
       filteredData.edges = data.edges;
       filteredData.colors = data.colors;
@@ -147,28 +147,71 @@ export default {
     };
 
     function buildNetwork() {
-      // Assign values to the reactive objects
-      data.nodes.node1 = { name: "1" };
-      data.nodes.node2 = { name: "0" };
-      data.nodes.node3 = { name: "2" };
+      // Read from file
+      fetch("data_small.txt")
+        .then(response => response.text())
+        .then(fileContent => {
+          const fileData = parseFileData(fileContent);
+          data.nodes = fileData.nodes;
+          data.edges = fileData.edges;
+          data.colors = fileData.colors;
 
-      //False = black, True = red
-      data.colors["1"] = false;
-      data.colors["0"] = true;
-      data.colors["2"] = true;
+          console.log(fileData.colors);
 
-      data.edges.edge1 = { source: "node1", target: "node2" };
-      // data.edges.edge2 = { source: "node2", target: "node3" };
-      data.edges.edge3 = { source: "node3", target: "node1" };
+          data = fileData;
+        })
+        .catch(error => {
+          console.error("Error reading file:", error);
+        });
 
-      data.layouts.nodes.node1 = { x: 50, y: 0 };
-      data.layouts.nodes.node2 = { x: 0, y: 75 };
-      data.layouts.nodes.node3 = { x: 100, y: 75 };
+        console.log(data)
+    }
 
-      filteredData.nodes = data.nodes;
-      filteredData.edges = data.edges;
-      filteredData.colors = data.colors;
-      console.log(filteredData.colors[0])
+    function parseFileData(fileContent) {
+      const lines = fileContent.trim().split("\n");
+      //Format for the data
+      const nodes = {};
+      const edges = {};
+      const colors = {};
+
+      lines.forEach((line, ) => {
+        const parts = line.split(' ');
+
+        //Start ripping apart the data
+        const timestamp = parts[0];
+        const color = parts[1] === '1'; //Convert from string to boolean
+        const leftNodeTime = parseFloat(parts[2]);
+        const rightNodeTime = parseFloat(parts[3]);
+        const current = parseFloat(parts[4]);
+        const voltages = parts.slice(5).map(parseFloat);
+
+        nodes[timestamp] = {
+          name: timestamp,
+          color: color,
+          leftNodeTime: leftNodeTime,
+          rightNodeTime: rightNodeTime,
+          current: current,
+          voltages: voltages,
+        }
+
+        colors[timestamp] = color;
+
+        //Creating edges
+        if (leftNodeTime !== "-1" && leftNodeTime in nodes) {
+          edges[`${timestamp}-left`] = {
+            source: timestamp,
+            target: leftNodeTime.toString(),
+          };
+        }
+        if (rightNodeTime !== "-1" && rightNodeTime in nodes) {
+          edges[`${timestamp}-right`] = {
+            source: timestamp,
+            target: rightNodeTime.toString(),
+          };
+        }
+      })
+
+      return { nodes, edges, colors };
     }
 
     return {
