@@ -176,6 +176,7 @@ public:
 
     RedBlackTree(vector<double> v, double i, double t) {
         root = new Node(v, i, t, false);
+        count++;
     };
 
     iterator begin() {
@@ -205,8 +206,7 @@ public:
             root = new Node(v, i, t, false);
             count++;
         }
-        else
-        {
+        else {
             // First insert a node and color it red
             Node* new_node = new Node(v, i, t, true);
             Node* p = root;
@@ -261,6 +261,10 @@ public:
         bool temp = grand_parent->color;
         grand_parent->color = parent->color;
         parent->color = temp;
+
+        if (root == grand_parent) {
+            root = parent;
+        }
     }
 
     void left_left_rotate(Node* parent) {
@@ -288,6 +292,10 @@ public:
         bool temp = grand_parent->color;
         grand_parent->color = parent->color;
         parent->color = temp;
+
+        if (root == grand_parent) {
+            root = parent;
+        }
     }
 
     void right_rotate(Node* p) {
@@ -333,8 +341,7 @@ public:
             p->color = false;
             return;
         }
-        if (count >= 3)
-        {
+        if (count >= 3) {
             Node* parent = p->parent;
             Node* grand_parent = p->parent->parent;
             Node* uncle = nullptr;
@@ -362,19 +369,23 @@ public:
                 else if (parent->time > grand_parent->time) { // RL and RR
                     if (p->time > parent->time) { // RR
                         right_right_rotate(parent);
+                        check_color(parent);
                     }
                     else { // RL
                         right_rotate(p);
                         right_right_rotate(p);
+                        check_color(parent);
                     }
                 }
                 else { // LL and LR
                     if (p->time < parent->time) { // LL
                         left_left_rotate(parent);
+                        check_color(parent);
                     }
                     else {
                         left_rotate(p);
                         left_left_rotate(p);
+                        check_color(parent);
                     }
                 }
             }
@@ -408,17 +419,16 @@ int main()
     vector<double> v(96,0);
     double t = 0;
     double i = 0;
-    RedBlackTree tree(v,i,10);
+    RedBlackTree tree(v,i,1);
     // tree.insert(v,i,t);
-    tree.insert(v,i,9);
-    tree.insert(v,i,13);
-    tree.insert(v,i,15);
-    tree.insert(v,i,14);
-    tree.insert(v,i,25);
+    tree.insert(v,i,2);
+    tree.insert(v,i,3);
+    tree.insert(v,i,4);
+    tree.insert(v,i,5);
+    tree.insert(v,i,6);
+    tree.insert(v,i,7);
+    tree.insert(v,i,8);
     cout << "test" << endl;
-
-    RedBlackTree::iterator it = tree.search_range(30);
-    cout << *it << endl;
 
     return 0;
 }
