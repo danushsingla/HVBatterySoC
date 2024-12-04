@@ -1,6 +1,7 @@
 #define ENABLE_ASSERTS
 #include "BTree.hpp"
 #include "CSVReader.h"
+#include "RedBlackTree.hpp"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -100,24 +101,31 @@ void funner_test() {
   }
 }
 
-template<typename iterator>
-double changeInSOC(const iterator& iter) {
-    double soc = 0.0;
-    double before = 0.0;
-    for (auto pair : iter) {
-        double now = pair.first;
-        double current = pair.second[1];
-        double voltage = 0.0;
-        for (int i = 2; i < pair.second.size(); i++) {
-            voltage += pair.second[i];
-        }
-        std::cout << "Voltage: " << voltage << " ";
-        std::cout << "Current: " << current << "\n";
-
-        soc += (now - before) * current * voltage;
-        before = now;
+template <const int N>
+double changeInSOC(const BTree<double, std::vector<double>, N> &iter,
+                   double start = 0, double end = 100000) {
+  double soc = 0.0;
+  double before = 0.0;
+  int i = 0;
+  auto iterator = start == 0 ? iter.begin() : iter.rangeLookUp(start);
+  for (; iterator != iter.end(); ++iterator) {
+    auto &pair = *iterator;
+    double now = pair.first;
+    if (now >= end) {
+      break;
     }
-    return soc / THEORETICAL_CAPACITY;
+    double current = pair.second[pair.second.size() - 1];
+    double voltage = 0.0;
+    for (int i = 1; i < pair.second.size() - 1; i++) {
+      voltage += pair.second[i];
+    }
+    // -1.0 factor is because a negative current reading is charging, a positive
+    // current reading is discharge
+    soc += -1.0 * (now - before) * current * voltage;
+    before = now;
+    i += 1;
+  }
+  return soc / THEORETICAL_CAPACITY;
 }
 
 void stuff() {
@@ -177,17 +185,64 @@ void stuff() {
   }
   avg /= 10;
 
-  std::cout << "Inserted " << i << " lines of data into a BTree of order 11 in " << avg << " ns.\n";
+  std::cout << "Inserted " << i << " lines of data into a BTree of order 11 in "
+            << avg << " ns.\n";
+}
+
+double rbtreesoc(RedBlackTree &tree, double start = 0, double end = 100000) {
+  int i = 0;
+  double soc = 0.0;
+  double before = 0.0;
+  auto iter = start == 0 ? tree.begin() : tree.search_range(start);
+  for (; iter != tree.end(); ++iter) {
+    auto &node = *iter;
+    double now = node.time;
+    if (now >= end) {
+      break;
+    }
+    double current = node.current;
+    double voltage = 0.0;
+    for (int i = 0; i < node.voltages.size(); i++) {
+      voltage += node.voltages[i];
+    }
+    // std::cout << "Voltage: " << voltage << " ";
+    // std::cout << "Current: " << current << "\n";
+
+    // -1.0 factor is because a negative current reading is charging, a positive
+    // current reading is discharge
+    soc += -1.0 * (now - before) * current * voltage;
+    before = now;
+    i++;
+  }
+  return soc / THEORETICAL_CAPACITY;
 }
 
 int main(void) {
-  specific_test();
-  funner_test();
-  for (int i = 0; i < 10; i++) {
-    fuzzy_tests();
+  std::string path;
+  std::cout << "Enter path of battery data csv: ";
+  std::cin >> path;
+  std::cout << "\n";
+
+  std::string raw_start_time;
+  std::cout << "Enter start time (enter \"begin\" to start at beginning): ";
+  std::cin >> raw_start_time;
+  std::cout << "\n";
+  double start = 0.0;
+  try {
+    start = stof(raw_start_time);
+  } catch (std::exception e) {
   }
 
-  
+  std::string raw_end_time;
+  std::cout << "Enter end time (enter \"end\" to finish at end): ";
+  std::cin >> raw_end_time;
+  std::cout << "\n";
+  double end = 0.0;
+  try {
+    end = stof(raw_end_time);
+  } catch (std::exception e) {
+  }
+
   CSVReader reader("data/full_project_data.csv");
   reader.nextStringLine();
   int i = 0;
@@ -200,18 +255,31 @@ int main(void) {
   }
 
   BTree<double, std::vector<double>> tree;
-  for (auto line: raw_lines) {
+  auto btree_build_time_ns = timeit([&]() {
+    for (auto line : raw_lines) {
       tree.insert(line[0], line);
-  }
+    }
+  });
 
-  std::cout << "Lines: " << raw_lines.size() << "\n";
+  double res = changeInSOC(tree, start, end);
 
-  double res = changeInSOC(tree);
+  RedBlackTree rb_tree;
 
-  std::cout << "result: " << res * 100.0 << "%" << "\n";
+  auto rbtree_build_time_ns = timeit([&]() {
+    for (auto line : raw_lines) {
+      rb_tree.insert(
+          std::vector<double>(line.begin() + 1, line.begin() + 1 + 96),
+          line[line.size() - 1], line[0]);
+    }
+  });
 
-  char c;
-  std::cin >> c;
+  double rbtree_res = rbtreesoc(rb_tree, start, end);
+
+  std::cout << "BTree SOC Change Result: " << res * 100.0 << "%" << "\n";
+  std::cout << "BTree Build Time: " << (double)btree_build_time_ns / 1e9 << "s" << "\n";
+  std::cout << "Red-Black Tree SOC Change Result: " << rbtree_res * 100.0 << "%"
+            << "\n";
+  std::cout << "Red-Black Build Time: " << (double)rbtree_build_time_ns / 1e9 << "s" << "\n";
 
   return 0;
 }
