@@ -30,6 +30,9 @@ class BTree {
       this->parent = nullptr;
     }
 
+    // Inserts inside the BTree node block
+    // Basically just adds key/value to the internal array where it should be
+    // Method assumes there's room for the new key/value
     int insert(K k, V v, const Comp &comp) {
       assert(!isFull());
       int i = size;
@@ -53,7 +56,9 @@ class BTree {
       return i;
     }
 
+    // Is the node's array full
     bool isFull() { return size == N; };
+    // A node is a leaf if it doesn't have any children
     bool isLeaf() {
       for (int i = 0; i < size + 1; i++) {
         if (children[i] != nullptr) {
@@ -74,7 +79,9 @@ class BTree {
   BTreeNode *root = nullptr;
   size_t _size = 0;
 
+  // Comparison function
   Comp comp;
+  // Checks if a node needs to be split after an insertion and does the split
   void balance(BTreeNode *node) {
     if (node == nullptr) {
       return;
@@ -86,6 +93,7 @@ class BTree {
     int median = node->size / 2;
 
     // split around median
+    // move the values above the median to a new node
     auto right_side = new BTreeNode();
     for (int i = median + 1; i < node->size; i++) {
       right_side->keys[i - median - 1] = node->keys[i];
@@ -106,6 +114,7 @@ class BTree {
       right_side->children[node->size - median - 1]->parent = right_side;
     }
 
+    // Divide's this node size by two to make this node the left side node
     node->size /= 2;
 
     // we have to create a new node to be the root and propagate too
@@ -140,6 +149,7 @@ class BTree {
 
     bool operator!=(const BTreeIterator &other) { return !(*this == other); }
 
+    // Go to the next node in the tree
     void operator++() {
       if (btree == nullptr) {
         return;
@@ -165,6 +175,7 @@ class BTree {
 
 public:
 
+  // Returns the number of elements in the tree
   size_t size() {
       return this->_size;
   }
@@ -259,6 +270,8 @@ public:
     return this->end();
   }
 
+  // Exact lookup
+  // Throws an exception of the key is not present
   const V &operator[](const K &key) const {
     auto lookup = rangeLookUp(key);
     if (lookup == this->end() || (*lookup).first != key) {
