@@ -32,16 +32,16 @@ template <const int N>
 double changeInSOC(const BTree<double, std::vector<double>, N> &iter,
                    double start = 0, double end = 100000) {
   double soc = 0.0;
-  double before = 0.0;
   int i = 0;
 
   auto iterator = iter.begin();
   if (start != 0) {
     auto time = timeit([&]() { iterator = iter.rangeLookUp(start); });
-    std::cout << "Time to find initial BTree node: " << time << "ns\n";
+    std::cout << "Time to find initial BTree node: " << time << "ns with an initial time of " << (*iterator).first << "\n";
   }
   int voltage_count = 0;
   int current_count = 0;
+  double before = (*iterator).first;
   auto calculation_time = timeit([&]() {
     for (; iterator != iter.end(); ++iterator) {
       auto &pair = *iterator;
@@ -72,14 +72,14 @@ double changeInSOC(const BTree<double, std::vector<double>, N> &iter,
 double rbtreesoc(RedBlackTree &tree, double start = 0, double end = 100000) {
   int i = 0;
   double soc = 0.0;
-  double before = 0.0;
   auto iter = tree.begin();
   if (start != 0) {
     auto time = timeit([&]() { iter = tree.search_range(start); });
-    std::cout << "Time to find initial Red-Black Tree node: " << time << "ns\n";
+    std::cout << "Time to find initial Red-Black Tree node: " << time << "ns with a start time of" << (*iter).time << "\n";
   }
   int voltage_count = 0;
   int current_count = 0;
+  double before = (*iter).time;
   auto calculation_time = timeit([&]() {
     for (; iter != tree.end(); ++iter) {
       auto &node = *iter;
