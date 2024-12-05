@@ -53,6 +53,7 @@ import dagre from "dagre/dist/dagre.min.js"
 
 export default {
   setup() {
+    //Actual data
     let data = reactive({
       nodes: {},
       edges: {},
@@ -60,6 +61,7 @@ export default {
       layouts: { nodes: {} },
     });
 
+    //Filtered data for ranges
     let filteredData = reactive({
       nodes: {},
       edges: {},
@@ -67,11 +69,13 @@ export default {
       layouts: { nodes: {} },
     });
 
+    //Color each node red or black
     const COLOR_RED = "#ff0000";
     const COLOR_BLACK = "#000000";
 
     let rangeInput = ref("");
 
+    //For the info box
     const selectedNode = ref(null);
     const selectedNodeColor = ref('');
     const selectedNodeCurrent = ref('');
@@ -112,6 +116,7 @@ export default {
         // },
         // onBeforeInitialDisplay: () => layout(),
         },
+        //Node, divide text by 1000 for decimal point correction
         node: {
           label: {
             visible: false,
@@ -129,6 +134,7 @@ export default {
     configs.node.selectable = true
     configs.node.label.visible = true
 
+    //Filters each node by range, allows for float ranges
     function filterNodesByRange() {
       const range = rangeInput.value
       
@@ -142,6 +148,7 @@ export default {
       //Filters nodes based on their name (timestamp) based on the range
       filteredData.nodes = Object.fromEntries(
         Object.entries(data.nodes).filter(([, node]) =>{
+          //Divide by 1000 since they are by a factor of 1000 off
             if (node.name/1000 >= minRange && node.name/1000 <= maxRange) {
               console.log(node.name/1000)
               console.log(minRange)
@@ -175,6 +182,7 @@ export default {
     );
     }
 
+    //Reset the nodes after filtering, basically empty range input and set filteredData back to the original Data. Also call layout to make sure the data is in the tree format.
     function resetNodes() {
       rangeInput.value = "";
       filteredData.nodes = data.nodes;
@@ -184,6 +192,7 @@ export default {
       filteredData.layouts = data.layouts;
     }
 
+    //Layout, uses dagre for auto-creating the positioning
     function layout() {
       if (Object.keys(data.nodes).length <= 1 || Object.keys(data.edges).length == 0) {
         return
@@ -192,6 +201,7 @@ export default {
       // Create a new graph instance for Dagre
       const g = new dagre.graphlib.Graph()
 
+      //Big spacing
       const nodeSize = 50
 
       g.setGraph({
@@ -227,6 +237,7 @@ export default {
           const x = node.x;
           const y = node.y;
 
+          //Checks for undefined positions (don't add them)
           if (x !== undefined && y !== undefined) {
             data.layouts.nodes[nodeId] = { x, y };
           } else {
@@ -238,6 +249,7 @@ export default {
       })
     }
 
+    //For everytime you click a node, pop up its info box with its information
     const click_event = {
       "node:click": ({ node }) => {
         selectedNode.value = filteredData.nodes[node];
@@ -248,8 +260,9 @@ export default {
       },
     };
 
+    //Build the tree, only happens at the start
     function buildNetwork() {
-      // Read from file
+      // Read from file, using the dataset of 200 nodes/20,000 data points
       fetch("data_smaller.txt")
         .then(response => response.text())
         .then(fileContent => {
@@ -263,6 +276,7 @@ export default {
         });
     }
 
+    //Parses the file data to read the information from it
     function parseFileData(fileContent) {
       const lines = fileContent.trim().split("\n");
       //Format for the data
