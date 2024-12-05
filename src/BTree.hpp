@@ -72,6 +72,7 @@ class BTree {
     }
   };
   BTreeNode *root = nullptr;
+  size_t _size = 0;
 
   Comp comp;
   void balance(BTreeNode *node) {
@@ -163,7 +164,13 @@ class BTree {
   };
 
 public:
+
+  size_t size() {
+      return this->_size;
+  }
+
   void insert(K k, V v) {
+    _size++;
     if (!root) {
       root = new BTreeNode();
       root->insert(k, v, comp);
