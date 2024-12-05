@@ -35,7 +35,12 @@
 </template>
 
 <script>
-// MOST CODE IS FROM V-NETWORK-GRAPH AND VUE DOCUMENTATION
+// MOST CODE IS FROM V-NETWORK-GRAPH AND VUE DOCUMENTATION. SOME STACK OVERFLOW AND GITHUB WAS USED FOR HELP WITH DAGRE
+//https://github.com/dash14/v-network-graph
+//https://dash14.github.io/v-network-graph/
+//https://stackoverflow.com/questions/72558793/design-network-topology-graph-with-vuejs
+//https://www.npmjs.com/
+//https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/fromEntries
 import { ref, reactive } from "vue";
 import * as vNG from "v-network-graph";
 // import * as d3 from "d3";
