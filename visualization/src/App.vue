@@ -43,13 +43,7 @@
 //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/fromEntries
 import { ref, reactive } from "vue";
 import * as vNG from "v-network-graph";
-// import * as d3 from "d3";
-// import { hierarchy, tree } from "d3-hierarchy";
 import dagre from "dagre/dist/dagre.min.js"
-
-// import {
-//   ForceLayout
-// } from "v-network-graph/lib/force-layout"
 
 export default {
   setup() {
@@ -86,36 +80,6 @@ export default {
 
     const configs = reactive(
       vNG.defineConfigs({
-        view: {
-        //   layoutHandler: new ForceLayout({
-        //     positionFixedByDrag: false,
-        //     positionFixedByClickWithAltKey: true,
-        //     createSimulation: (d3, nodes, edges) => {
-        //     // Create a tree-like structure
-        //     const root = hierarchy(nodes, (node) => edges.filter((edge) => edge.source === node.id).map((edge) => nodes[edge.target]));
-        //     const treeLayout = tree().size([500, 500]);
-        //     treeLayout(root);
-
-        //     nodes.forEach((node) => {
-        //       const treeNode = root.descendants().find((descendant) => descendant.data.name === node.name); // Find the corresponding node in the tree layout
-        //       if (treeNode) {
-        //         node.x = treeNode.x; // Set the X position based on the layout
-        //         node.y = treeNode.y; // Set the Y position based on the layout
-        //       }
-        //     });
-
-        //     return d3
-        //     .forceSimulation(nodes)
-        //     .force("edge", null) // Remove edge force
-        //     .force("charge", null) // Remove charge force
-        //     .force("center", null) // Remove centering force
-        //     .alpha(0) // Prevent initial motion
-        //     .stop(); // Stop the simulation
-        //     }
-        //   }),
-        // },
-        // onBeforeInitialDisplay: () => layout(),
-        },
         //Node, divide text by 1000 for decimal point correction
         node: {
           label: {
@@ -226,8 +190,6 @@ export default {
 
       // Apply Dagre's layout to position the nodes
       dagre.layout(g)
-
-      // console.log(data.layouts)
 
       // Update node positions with calculated coordinates
       g.nodes().forEach((nodeId) => {
