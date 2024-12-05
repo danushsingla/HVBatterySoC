@@ -15,6 +15,13 @@ struct Node {
     Node *left = nullptr;
     Node *right = nullptr;
 
+    /**
+    *  Node Constructor
+    *  V - A vector of voltages with 96 values
+    *  i - The instantaneous current
+    *  t - The time that v and i are recorded at
+    *  c - The color of the node to take first
+    */
     Node(vector<double> v, double i, double t, bool c) {
         for (double j = 0; j < v.size(); j++) {
             voltages[j] = v[j];
@@ -24,6 +31,11 @@ struct Node {
         color = c;
     }
 
+    /**
+    *  Looks for an exact match of a time stamp
+    *  t - The time stamp to look for
+    *  return - A Node pointer, returns null if not found
+    */
     Node* search(double t) {
         if (t < time) {
             if (t == left->time) {
@@ -47,6 +59,11 @@ struct Node {
         return nullptr;
     }
 
+    /**
+    *  Looks for the first node that is greater than or equal to the given timestamp
+    *  t - The time stamp to look for
+    *  return - A Node pointer to the first that is greater than or equal to the given time stamp, returns null if given time stamp is outside the range of the tree
+    */
     Node* search_range(double t) {
         if (t == time) {
             return this;
@@ -201,6 +218,12 @@ public:
         return ++iterator(node);
     }
 
+    /**
+    *  Inserts a new node into the tree
+    *  v - A vector of 96 voltage values
+    *  i - Instantaneous current
+    *  t - The time that v and i are recorded
+    */
     void insert(vector<double> v, double i, double t) {
         if (root == nullptr) {
             root = new Node(v, i, t, false);
@@ -211,7 +234,7 @@ public:
             // First insert a node and color it red
             Node* new_node = new Node(v, i, t, true);
             Node* p = root;
-            while (p != nullptr) {
+            while (p != nullptr) { // Find leaf node to insert at
                 if (new_node->time > p->time) {
                     if (p->right == nullptr) {break;}
                     p = p->right;
@@ -221,7 +244,7 @@ public:
                     p = p->left;
                 }
             }
-            if (new_node->time > p->time) {
+            if (new_node->time > p->time) { // Inserts the node
                 p->right = new_node;
                 new_node->parent = p;
             }
@@ -236,6 +259,10 @@ public:
         }
     };
 
+    /**
+    * Rotation based off of GeeksForGeeks explanation, source in report
+    * parent - The parent node of the node that is to be rotated
+    */
     void right_right_rotate(Node* parent) {
         Node* T3 = parent->left;
         Node* grand_parent = parent->parent;
@@ -265,6 +292,10 @@ public:
         parent->color = temp;
     }
 
+    /**
+    *  Rotation based off of GeeksForGeeks explanation, source in report
+    *  parent - The parent node of the node that is to be rotated
+    */
     void left_left_rotate(Node* parent) {
         Node* T3 = parent->right;
         Node* grand_parent = parent->parent;
@@ -293,6 +324,10 @@ public:
         parent->color = temp;
     }
 
+    /**
+    *  Rotation based off of GeeksForGeeks explanation, source in report
+    *  p - The node that is to be rotated
+    */
     void right_rotate(Node* p) {
         Node* T4 = p->right;
         Node* parent = p->parent;
@@ -314,6 +349,10 @@ public:
         }
     }
 
+    /**
+    *  Rotation based off of GeeksForGeeks explanation, source in report
+    *  p - The node that is to be rotated
+    */
     void left_rotate(Node* p) {
         Node* T2 = p->left;
         Node* parent = p->parent;
@@ -335,6 +374,11 @@ public:
         }
     }
 
+    /**
+    *  Checks the color layout of the tree from the bottom up, this also balances the tree
+    *  p - Node to check the colors from
+    *  Used insertion post from GeeksForGeeks, reference also in report
+    */
     void check_color(Node* p) { // This function is made with aid from GeeksForGeeks
         if (p->parent == nullptr) { // Base case, root node
             p->color = false;
@@ -348,12 +392,6 @@ public:
             if (grand_parent == nullptr) {
                 uncle = nullptr;
             }
-            // else if (parent->time > grand_parent->time) {
-            //     uncle = grand_parent->left;
-            // }
-            // else {
-            //     uncle = grand_parent->right;
-            // }
             else if (grand_parent->left == parent) {
                 uncle = grand_parent->left;
             }
@@ -394,6 +432,11 @@ public:
         }
     }
 
+    /**
+    *  Searches for a node with the exact time stamp given
+    *  t - Time stamp to look for
+    *  return - A node pointer to the node found, returns null if no node is found
+    */
     Node* search(double t) {
         if (root == nullptr) {
             return nullptr;
@@ -401,6 +444,11 @@ public:
         return root->search(t);
     }
 
+    /**
+    *  Searches for the first node that is greater than or equal to the given time stamp
+    *  start - The time stamp to find
+    *  return - An iterator that references the first node that is greater than or equal to the given time stamp, returns a .end() iterator if not found
+    */
     iterator search_range(double start) {
         if (root == nullptr) {
             return iterator(nullptr);
@@ -415,23 +463,3 @@ public:
         return iterator(ret);
     }
 };
-
-// int main()
-// {
-//     vector<double> v(96,0);
-//     double t = 0;
-//     double i = 0;
-//     RedBlackTree tree(v,i,10);
-//     // tree.insert(v,i,t);
-//     tree.insert(v,i,9);
-//     tree.insert(v,i,13);
-//     tree.insert(v,i,15);
-//     tree.insert(v,i,14);
-//     tree.insert(v,i,25);
-//     cout << "test" << endl;
-//
-//     RedBlackTree::iterator it = tree.search_range(30);
-//     cout << *it << endl;
-//
-//     return 0;
-// }
