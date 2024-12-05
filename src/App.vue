@@ -17,8 +17,18 @@
     <!-- Node Info Box -->
     <div v-if="selectedNode" class="node-info-box">
       <h3>Node Information</h3>
-      <p><strong>Name:</strong> {{ selectedNode.name }}</p>
+      <p><strong>Timestamp:</strong> {{ selectedNode.name/1000 }}</p>
       <p><strong>Color:</strong> {{ selectedNodeColor }}</p>
+      <p><strong>Current:</strong> {{ selectedNodeCurrent }}</p>
+
+      <div v-if="selectedNodeVoltages">
+        <h4>Voltage Array</h4>
+        <ul>
+          <li v-for="(voltage, index) in selectedNodeVoltages" :key="index">
+            <strong>Voltage {{ index + 1 }}:</strong> {{ voltage }}
+          </li>
+        </ul>
+      </div>
     </div>
 
   </div>
@@ -59,6 +69,8 @@ export default {
 
     const selectedNode = ref(null);
     const selectedNodeColor = ref('');
+    const selectedNodeCurrent = ref('');
+    const selectedNodeVoltages = ref([]);
 
     // initialize network
     buildNetwork();
@@ -93,11 +105,12 @@ export default {
         //     }
         //   }),
         // },
-        onBeforeInitialDisplay: () => layout(),
+        // onBeforeInitialDisplay: () => layout(),
         },
         node: {
           label: {
             visible: false,
+            text: (n) => n.name/1000,
           },
           normal: {
             color: (n) => {
@@ -111,30 +124,39 @@ export default {
     configs.node.selectable = true
     configs.node.label.visible = true
 
-    function parseRange(range) {
-      const [start, end] = range.split("-").map(Number);
+    function filterNodesByRange() {
+      const range = rangeInput.value
+      
+      const [start, end] = range.split("-").map(parseFloat);
       if (isNaN(start) || isNaN(end)) {
         return [];
       }
-      const min = Math.min(start, end);
-      const max = Math.max(start, end);
-      return Array.from({ length: max - min + 1 }, (_, i) => (min + i).toString());
-    }
-
-    function filterNodesByRange() {
-      const range = parseRange(rangeInput.value);
+      const minRange = Math.min(start, end);
+      const maxRange = Math.max(start, end);
 
       //Filters nodes based on their name (timestamp) based on the range
       filteredData.nodes = Object.fromEntries(
-        Object.entries(data.nodes).filter(([, node]) =>
-          range.includes(node.name)
+        Object.entries(data.nodes).filter(([, node]) =>{
+            if (node.name/1000 >= minRange && node.name/1000 <= maxRange) {
+              console.log(node.name/1000)
+              console.log(minRange)
+              console.log(maxRange)
+              return true;
+            }
+          }
         )
       );
 
       //Filters edges based on their source and target nodes that match those in the range
       filteredData.edges = Object.fromEntries(
-        Object.entries(data.edges).filter(([, edge]) =>
-          range.includes(data.nodes[edge.source]?.name) && range.includes(data.nodes[edge.target]?.name)
+        Object.entries(data.edges).filter(([, edge]) =>{
+          //range.includes(data.nodes[edge.source]?.name) && range.includes(data.nodes[edge.target]?.name)
+          if (data.nodes[edge.source]?.name/1000 >= minRange && data.nodes[edge.source]?.name/1000 <= maxRange
+            && data.nodes[edge.target]?.name/1000 >= minRange && data.nodes[edge.target]?.name/1000 <= maxRange
+          ) {
+            return true;
+          }
+        }
         )
       );
 
@@ -158,16 +180,14 @@ export default {
     }
 
     function layout() {
-      console.log("Layouting...")
       if (Object.keys(data.nodes).length <= 1 || Object.keys(data.edges).length == 0) {
-        console.log("No nodes or edges to layout.")
         return
       }
 
       // Create a new graph instance for Dagre
       const g = new dagre.graphlib.Graph()
 
-      const nodeSize = 10
+      const nodeSize = 50
 
       g.setGraph({
         rankdir: 'TB',  // Top to Bottom layout
@@ -192,17 +212,13 @@ export default {
       // Apply Dagre's layout to position the nodes
       dagre.layout(g)
 
-      console.log(g._nodes)
       // console.log(data.layouts)
 
       // Update node positions with calculated coordinates
       g.nodes().forEach((nodeId) => {
         const node = g._nodes[nodeId];
-        console.log(nodeId)
-        console.log(node)
 
         if (node) {
-          console.log("x: " + node.x + ", y: " + node.y)
           const x = node.x;
           const y = node.y;
 
@@ -215,8 +231,6 @@ export default {
           console.warn(`Node ${nodeId} not found after layout.`);
         }
       })
-
-      // console.log(g.node.nodes)
     }
 
     const click_event = {
@@ -224,12 +238,14 @@ export default {
         selectedNode.value = filteredData.nodes[node];
 
         selectedNodeColor.value = filteredData.colors[filteredData.nodes[node].name] ? "Red" : "Black";
+        selectedNodeCurrent.value = filteredData.nodes[node].current;
+        selectedNodeVoltages.value = filteredData.nodes[node].voltages;
       },
     };
 
     function buildNetwork() {
       // Read from file
-      fetch("data_small.txt")
+      fetch("data_smaller.txt")
         .then(response => response.text())
         .then(fileContent => {
           const fileData = parseFileData(fileContent);
@@ -299,6 +315,8 @@ export default {
       click_event,
       selectedNode,
       selectedNodeColor,
+      selectedNodeCurrent,
+      selectedNodeVoltages
     };
   },
 };
@@ -318,6 +336,8 @@ export default {
   position: fixed;
   top: 10px;
   right: 10px;
+  max-height: 300px;
+  overflow-y: auto;
   background-color: rgba(0, 0, 0, 0.7);
   color: white;
   padding: 10px;

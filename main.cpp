@@ -29,7 +29,7 @@ int main()
   int count = 0;
   for (auto line : raw_lines) {
     cout << count << endl;
-    if(count >= 10) break;
+    if(count >= 1100) break;
     count++;
       rb_tree.insert(
           std::vector<double>(line.begin() + 1, line.begin() + 1 + 96),
