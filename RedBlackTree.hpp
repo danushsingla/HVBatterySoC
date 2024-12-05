@@ -445,7 +445,7 @@ public:
     }
 
     void print() {
-        std::ofstream outFile("data_small.txt");  // Open the file for writing
+        std::ofstream outFile("data_ten.txt");  // Open the file for writing
 
         //Create queue
         queue<Node*> q;

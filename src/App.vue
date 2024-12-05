@@ -28,9 +28,13 @@
 // MOST CODE IS FROM V-NETWORK-GRAPH AND VUE DOCUMENTATION
 import { ref, reactive } from "vue";
 import * as vNG from "v-network-graph";
-import {
-  ForceLayout
-} from "v-network-graph/lib/force-layout"
+// import * as d3 from "d3";
+// import { hierarchy, tree } from "d3-hierarchy";
+import dagre from "dagre/dist/dagre.min.js"
+
+// import {
+//   ForceLayout
+// } from "v-network-graph/lib/force-layout"
 
 export default {
   setup() {
@@ -62,20 +66,34 @@ export default {
     const configs = reactive(
       vNG.defineConfigs({
         view: {
-          layoutHandler: new ForceLayout({
-            positionFixedByDrag: false,
-            positionFixedByClickWithAltKey: true,
-            createSimulation: (d3, nodes, edges) => {
-              // d3-force parameters
-              const forceLink = d3.forceLink(edges).id(d => d.id);
-              return d3
-                .forceSimulation(nodes)
-                .force("edge", forceLink.distance(40).strength(0.5))
-                .force("charge", d3.forceManyBody().strength(-800))
-                .force("center", d3.forceCenter().strength(0.05))
-                .alphaMin(0.001);
-            }
-          }),
+        //   layoutHandler: new ForceLayout({
+        //     positionFixedByDrag: false,
+        //     positionFixedByClickWithAltKey: true,
+        //     createSimulation: (d3, nodes, edges) => {
+        //     // Create a tree-like structure
+        //     const root = hierarchy(nodes, (node) => edges.filter((edge) => edge.source === node.id).map((edge) => nodes[edge.target]));
+        //     const treeLayout = tree().size([500, 500]);
+        //     treeLayout(root);
+
+        //     nodes.forEach((node) => {
+        //       const treeNode = root.descendants().find((descendant) => descendant.data.name === node.name); // Find the corresponding node in the tree layout
+        //       if (treeNode) {
+        //         node.x = treeNode.x; // Set the X position based on the layout
+        //         node.y = treeNode.y; // Set the Y position based on the layout
+        //       }
+        //     });
+
+        //     return d3
+        //     .forceSimulation(nodes)
+        //     .force("edge", null) // Remove edge force
+        //     .force("charge", null) // Remove charge force
+        //     .force("center", null) // Remove centering force
+        //     .alpha(0) // Prevent initial motion
+        //     .stop(); // Stop the simulation
+        //     }
+        //   }),
+        // },
+        onBeforeInitialDisplay: () => layout(),
         },
         node: {
           label: {
@@ -132,17 +150,79 @@ export default {
 
     function resetNodes() {
       rangeInput.value = "";
-      // console.log(data.nodes);
       filteredData.nodes = data.nodes;
       filteredData.edges = data.edges;
       filteredData.colors = data.colors;
+      layout();
+      filteredData.layouts = data.layouts;
+    }
+
+    function layout() {
+      console.log("Layouting...")
+      if (Object.keys(data.nodes).length <= 1 || Object.keys(data.edges).length == 0) {
+        console.log("No nodes or edges to layout.")
+        return
+      }
+
+      // Create a new graph instance for Dagre
+      const g = new dagre.graphlib.Graph()
+
+      const nodeSize = 10
+
+      g.setGraph({
+        rankdir: 'TB',  // Top to Bottom layout
+        nodesep: nodeSize * 2,
+        edgesep: nodeSize,
+        ranksep: nodeSize * 2,
+      })
+
+      // Set default edge label (empty)
+      g.setDefaultEdgeLabel(() => ({}))
+
+      // Add nodes to the graph with their labels and size
+      Object.entries(data.nodes).forEach(([nodeId, node]) => {
+        g.setNode(nodeId, { label: node.name, width: nodeSize, height: nodeSize })
+      })
+
+      // Add edges to the graph
+      Object.values(data.edges).forEach(edge => {
+        g.setEdge(edge.source, edge.target)
+      })
+
+      // Apply Dagre's layout to position the nodes
+      dagre.layout(g)
+
+      console.log(g._nodes)
+      // console.log(data.layouts)
+
+      // Update node positions with calculated coordinates
+      g.nodes().forEach((nodeId) => {
+        const node = g._nodes[nodeId];
+        console.log(nodeId)
+        console.log(node)
+
+        if (node) {
+          console.log("x: " + node.x + ", y: " + node.y)
+          const x = node.x;
+          const y = node.y;
+
+          if (x !== undefined && y !== undefined) {
+            data.layouts.nodes[nodeId] = { x, y };
+          } else {
+            console.warn(`Node ${nodeId} does not have x or y after layout.`);
+          }
+        } else {
+          console.warn(`Node ${nodeId} not found after layout.`);
+        }
+      })
+
+      // console.log(g.node.nodes)
     }
 
     const click_event = {
       "node:click": ({ node }) => {
         selectedNode.value = filteredData.nodes[node];
 
-        //console.log(filteredData.colors);
         selectedNodeColor.value = filteredData.colors[filteredData.nodes[node].name] ? "Red" : "Black";
       },
     };
@@ -156,16 +236,10 @@ export default {
           data.nodes = fileData.nodes;
           data.edges = fileData.edges;
           data.colors = fileData.colors;
-
-          console.log(fileData.colors);
-
-          data = fileData;
         })
         .catch(error => {
           console.error("Error reading file:", error);
         });
-
-        console.log(data)
     }
 
     function parseFileData(fileContent) {
@@ -196,9 +270,6 @@ export default {
         }
 
         colors[timestamp] = color;
-
-        console.log("Current time: " + timestamp + " Left Node Time: " + leftNodeTime + " Right Node Time: " + rightNodeTime);
-        console.log(edges);
 
         //Creating edges
         if (leftNodeTime !== "-1") {
