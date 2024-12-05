@@ -1,4 +1,4 @@
-# HVBatterySoC
+# HVBatterySoC - High Voltage Battery State of Charge
 
 ## Installation
 
